@@ -28,5 +28,12 @@ textarea {
   </head>
   <body>
     <textarea></textarea>
+    <script>
+const observer = new MutationObserver(function(mutationList, observer) {
+  window.scrollTo(0, document.body.scrollHeight);
+});
+
+observer.observe(document.body, { childList: true, subtree: true });
+    </script>
   </body>
 </html>
