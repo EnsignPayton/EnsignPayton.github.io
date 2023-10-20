@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blazor and MVVM</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/cshtml-razor.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1><a href="../index.html">Logan Payton</a></h1>
+  </header>
+  <main>
+    <h2>Blazor and MVVM</h2>
+    <p>I spent my first few years as a developer working on WPF apps using MVVM. It was a pretty ergonomic experience,
+      and
+      after a while working with Blazor I found myself longing for some good old fashioned data binding. Let's make it
+      work.</p>
+    <p>Here's the base view class components can inherit from. This could be expanded out with better lifecycle hooks, a
+      "next render" work queue, or
+      whatever else you need.</p>
+    <pre>
+    <code class="language-csharp">
+public abstract class ViewBase&lt;TViewModel&gt; : ComponentBase, IDisposable where TViewModel : INotifyPropertyChanged
+{
+    [Inject] protected TViewModel VM { get; set; } = default;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            VM.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        VM.PropertyChanged += OnPropertyChanged;
+        base.OnInitialized();
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+}
+    </code>
+  </pre>
+
+    <p>The view model class will need to be registered with the DI container and implement
+      <code>INotifyPropertyChanged</code>. I use community toolkit's source generators to make this easy.</p>
+    <pre>
+    <code class="language-csharp">
+public sealed partial class SomeViewModel : ObservableObject
+{
+    [ObservableProperty] string _name = string.Empty;
+}
+
+...
+
+builder.Services.AddTransient&lt;SomeViewModel&gt;();
+    </code>
+  </pre>
+
+    <p>Finally, the actual component</p>
+    <pre>
+    <code language="language-cshtml-razor">
+@inherits ViewBase&lt;SomeViewModel&gt;
+
+Hello, @VM.Name
+    </code>
+  </pre>
+  </main>
+  <footer>
+    <a href="https://github.com/EnsignPayton">GitHub</a> |
+    <a href="https://www.linkedin.com/in/logan-payton-47338422b/">LinkedIn</a>
+  </footer>
+  <script>hljs.highlightAll();</script>
+</body>
+
+</html>
